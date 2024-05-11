@@ -17,9 +17,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -40,19 +45,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-val images = arrayOf(
-    // Image generated using Gemini from the prompt "cupcake image"
-    R.drawable.plu_croissant,
-    // Image generated using Gemini from the prompt "cookies images"
-    R.drawable.baked_goods_2,
-    // Image generated using Gemini from the prompt "cake images"
-    R.drawable.baked_goods_3,
-)
-val imageDescriptions = arrayOf(
-    R.string.image1_description,
-    R.string.image2_description,
-    R.string.image3_description,
-)
 
 @Composable
 fun FoodScanScreen(
@@ -67,6 +59,104 @@ fun FoodScanScreen(
     val context = LocalContext.current
     val img = painterResource(id = R.drawable.plu_croissant)
 
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { }) {
+                Icon(Icons.Default.Add, contentDescription = "Add")
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding),
+        ){
+            Text(
+                text = stringResource(R.string.foodscan_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Image(
+                modifier = Modifier
+                    .padding(start = 8.dp, end = 8.dp)
+                    .size(200.dp),
+                painter = painterResource(R.drawable.plu_croissant),
+                contentDescription = "PLU croissant"
+
+            )
+
+//        LazyRow(
+//            modifier = Modifier.fillMaxWidth()
+//        ) {
+//            itemsIndexed(images) { index, image ->
+//                var imageModifier = Modifier
+//                    .padding(start = 8.dp, end = 8.dp)
+//                    .requiredSize(200.dp)
+//                    .clickable {
+//                        selectedImage.intValue = index
+//                    }
+//                if (index == selectedImage.intValue) {
+//                    imageModifier =
+//                        imageModifier.border(BorderStroke(4.dp, MaterialTheme.colorScheme.primary))
+//                }
+//
+//            }
+//        }
+
+            Row(
+                modifier = Modifier.padding(all = 16.dp)
+            ) {
+                TextField(
+                    value = prompt,
+                    label = { Text(stringResource(R.string.label_prompt)) },
+                    onValueChange = { prompt = it },
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .padding(end = 16.dp)
+                        .align(Alignment.CenterVertically)
+                )
+
+                Button(
+                    onClick = {
+                        val bitmap = BitmapFactory.decodeResource(
+                            context.resources,
+                            R.drawable.plu_croissant
+                        )
+                        foodScanViewModel.sendPrompt(bitmap, prompt)
+                    },
+                    enabled = prompt.isNotEmpty(),
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                ) {
+                    Text(text = stringResource(R.string.action_go))
+                }
+            }
+
+            if (uiState is UiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else {
+                var textColor = MaterialTheme.colorScheme.onSurface
+                if (uiState is UiState.Error) {
+                    textColor = MaterialTheme.colorScheme.error
+                    result = (uiState as UiState.Error).errorMessage
+                } else if (uiState is UiState.Success) {
+                    textColor = MaterialTheme.colorScheme.onSurface
+                    result = (uiState as UiState.Success).outputText
+                }
+                val scrollState = rememberScrollState()
+                Text(
+                    text = result,
+                    textAlign = TextAlign.Start,
+                    color = textColor,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(16.dp)
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                )
+            }
+        }
+    }
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
