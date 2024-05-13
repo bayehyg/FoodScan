@@ -44,12 +44,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import android.content.Intent
+import android.provider.MediaStore
+import android.app.Activity
+import android.net.Uri
+import android.os.Environment
+import androidx.core.content.FileProvider
+import java.io.File
+import android.graphics.Bitmap
+import android.view.Surface
+import android.widget.ImageView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.ActivityResultCallback
+import androidx.camera.core.ImageCapture
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun FoodScanScreen(
-    foodScanViewModel: FoodScanViewModel = viewModel()
+    foodScanViewModel: FoodScanViewModel = viewModel() // default parameter
 ) {
+
+
 //    val selectedImage = remember { mutableIntStateOf(0) }
     val placeholderPrompt = stringResource(R.string.prompt_placeholder)
     val placeholderResult = stringResource(R.string.results_placeholder)
@@ -57,11 +78,33 @@ fun FoodScanScreen(
     var result by rememberSaveable { mutableStateOf(placeholderResult) }
     val uiState by foodScanViewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val img = painterResource(id = R.drawable.plu_croissant)
+    lateinit var capturedImage : ImageBitmap
+    lateinit var capturedBit : Bitmap
+    var img = painterResource(R.drawable.plu_croissant)
+    var pictureTaken = false
+    var st by rememberSaveable { mutableStateOf(pictureTaken) }
 
+
+    fun onImageCaptured(bit :Bitmap ) {
+        println("done")
+        pictureTaken = true
+        capturedBit = bit
+        capturedImage = bit.asImageBitmap()
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview(),
+        onResult = { bitmap ->
+            bitmap?.let { onImageCaptured(it) }
+        }
+    )
+    println("hey")
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
+        floatingActionButton = { // example named argument
+            FloatingActionButton(onClick = {
+                print("its working")
+                launcher.launch(null)
+            }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
@@ -76,32 +119,27 @@ fun FoodScanScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
-            Image(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp)
-                    .size(200.dp),
-                painter = painterResource(R.drawable.plu_croissant),
-                contentDescription = "PLU croissant"
+            if(pictureTaken){
+                Image(
+                    capturedImage,
+                    modifier = Modifier
+                        .padding(start = 8.dp, end = 8.dp)
+                        .size(200.dp),
 
-            )
+                    contentDescription = "PLU croissant"
+                )
+            }else{
 
-//        LazyRow(
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            itemsIndexed(images) { index, image ->
-//                var imageModifier = Modifier
-//                    .padding(start = 8.dp, end = 8.dp)
-//                    .requiredSize(200.dp)
-//                    .clickable {
-//                        selectedImage.intValue = index
-//                    }
-//                if (index == selectedImage.intValue) {
-//                    imageModifier =
-//                        imageModifier.border(BorderStroke(4.dp, MaterialTheme.colorScheme.primary))
-//                }
-//
-//            }
-//        }
+                Image(
+                    modifier = Modifier
+                        .padding(start = 8.dp, end = 8.dp)
+                        .size(200.dp),
+                    painter = painterResource(R.drawable.plu_croissant),
+                    contentDescription = "PLU croissant"
+
+                )
+            }
+
 
             Row(
                 modifier = Modifier.padding(all = 16.dp)
@@ -118,10 +156,12 @@ fun FoodScanScreen(
 
                 Button(
                     onClick = {
-                        val bitmap = BitmapFactory.decodeResource(
+                        val bitmap : Bitmap
+                        if(pictureTaken ){bitmap = capturedBit}else{bitmap =  BitmapFactory.decodeResource(
                             context.resources,
                             R.drawable.plu_croissant
                         )
+                        }
                         foodScanViewModel.sendPrompt(bitmap, prompt)
                     },
                     enabled = prompt.isNotEmpty(),
@@ -157,98 +197,4 @@ fun FoodScanScreen(
             }
         }
     }
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Text(
-            text = stringResource(R.string.foodscan_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(16.dp)
-        )
-
-        Image(
-            modifier = Modifier
-                .padding(start = 8.dp, end = 8.dp)
-                .size(200.dp),
-            painter = painterResource(R.drawable.plu_croissant),
-            contentDescription = "PLU croissant"
-
-        )
-
-//        LazyRow(
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            itemsIndexed(images) { index, image ->
-//                var imageModifier = Modifier
-//                    .padding(start = 8.dp, end = 8.dp)
-//                    .requiredSize(200.dp)
-//                    .clickable {
-//                        selectedImage.intValue = index
-//                    }
-//                if (index == selectedImage.intValue) {
-//                    imageModifier =
-//                        imageModifier.border(BorderStroke(4.dp, MaterialTheme.colorScheme.primary))
-//                }
-//
-//            }
-//        }
-
-        Row(
-            modifier = Modifier.padding(all = 16.dp)
-        ) {
-            TextField(
-                value = prompt,
-                label = { Text(stringResource(R.string.label_prompt)) },
-                onValueChange = { prompt = it },
-                modifier = Modifier
-                    .weight(0.8f)
-                    .padding(end = 16.dp)
-                    .align(Alignment.CenterVertically)
-            )
-
-            Button(
-                onClick = {
-                    val bitmap = BitmapFactory.decodeResource(
-                        context.resources,
-                        R.drawable.plu_croissant
-                    )
-                    foodScanViewModel.sendPrompt(bitmap, prompt)
-                },
-                enabled = prompt.isNotEmpty(),
-                modifier = Modifier
-                    .align(Alignment.CenterVertically)
-            ) {
-                Text(text = stringResource(R.string.action_go))
-            }
-        }
-
-        if (uiState is UiState.Loading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else {
-            var textColor = MaterialTheme.colorScheme.onSurface
-            if (uiState is UiState.Error) {
-                textColor = MaterialTheme.colorScheme.error
-                result = (uiState as UiState.Error).errorMessage
-            } else if (uiState is UiState.Success) {
-                textColor = MaterialTheme.colorScheme.onSurface
-                result = (uiState as UiState.Success).outputText
-            }
-            val scrollState = rememberScrollState()
-            Text(
-                text = result,
-                textAlign = TextAlign.Start,
-                color = textColor,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(16.dp)
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-            )
-        }
-    }
-}
-@Preview
-@Composable
-fun FoodScanPreview() {
-    FoodScanScreen()
 }

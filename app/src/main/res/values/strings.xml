@@ -3,7 +3,7 @@
     <string name="action_go">Go</string>
     <string name="foodscan_title">Scan your food</string>
     <string name="label_prompt">Prompt</string>
-    <string name="prompt_placeholder">Is this safe for a pregnant person to eat</string>
+    <string name="prompt_placeholder">Is this safe to eat</string>
     <string name="image1_description">Cupcake</string>
     <string name="image2_description">Cookies</string>
     <string name="image3_description">Cake</string>
